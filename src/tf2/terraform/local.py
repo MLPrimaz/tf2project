@@ -12,15 +12,16 @@ TF_CLI_CHDIR = environ.get("TF_CLI_CHDIR", getcwd())
 
 
 class TerraformLocalFileLoader(TerraformLoader):
-    def __init__(self, file_path):
+    def __init__(self, file_path, chdir):
         super().__init__()
         self._data_path = abspath(file_path)
+        self._chdir = abspath(chdir)
 
     def load(self):
         if exists(self._data_path) is False:
             raise Exception(f"File '{ self._data_path }' is not found.")
         result = run_subprocess(
-            f"terraform -chdir={ TF_CLI_CHDIR } show -json { self._data_path }",
+            f"terraform -chdir={ self._chdir } show -json { self._data_path }",
             shell=True,
             capture_output=True,
         )
@@ -31,14 +32,16 @@ class TerraformLocalFileLoader(TerraformLoader):
 
 
 class TerraformPlanLoader(TerraformLocalFileLoader):
-    def __init__(self, file_path=None):
+    def __init__(self, file_path=None, chdir=None):
         file_path = "./terraform.tfplan" if file_path is None else file_path
-        super().__init__(file_path)
+        chdir = self._chdir if chdir is None else TF_CLI_CHDIR
+        super().__init__(file_path, chdir)
         self._loader_type = "planloader"
 
 
 class TerraformStateLoader(TerraformLocalFileLoader):
-    def __init__(self, file_path=None):
+    def __init__(self, file_path=None, chdir=None):
         file_path = "./terraform.tfstate" if file_path is None else file_path
-        super().__init__(file_path)
+        chdir = self._chdir if chdir is None else TF_CLI_CHDIR
+        super().__init__(file_path, chdir)
         self._loader_type = "stateloader"
